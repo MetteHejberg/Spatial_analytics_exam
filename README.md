@@ -3,7 +3,7 @@ This project spatially explores the BlueBikes biking patterns in Boston in 2019 
 
 ## 2. Methods
 
-## 3. Usage
+## 3. Usage ```biking_patterns.Rmd```
 To run the code you should:
 - Pull this repository with this folder structure
 - Download the data and place it in ```in```
