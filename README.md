@@ -1,7 +1,13 @@
 ## 1. Spatial Analytics Exam: Biking Patterns in Boston 
+This project spatially explores the BlueBikes biking patterns in Boston in 2019 and 2020. 
 
 ## 2. Methods
 
 ## 3. Usage
+To run the code you should:
+- Pull this repository with this folder structure
+- Download the data and place it in ```in```
+- Install the packages mentioned in ```requirements.txt```
+- Set your current working directory to the level about ```src```
 
 ## 4. Discussion of Results 
