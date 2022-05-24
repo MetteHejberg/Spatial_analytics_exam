@@ -8,6 +8,6 @@ To run the code you should:
 - Pull this repository with this folder structure
 - Download the data and place it in ```in```
 - Install the packages mentioned in ```requirements.txt```
-- Set your current working directory to the level about ```src```
+- Set your current working directory ```src```
 
 ## 4. Discussion of Results 
