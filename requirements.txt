@@ -1,4 +1,0 @@
-To run the code, you should install the following packages in R:
-- tidyverse
-- leaflet
-- sf
