@@ -5,11 +5,11 @@ get the data here: https://www.kaggle.com/datasets/jackdaoud/bluebikes-in-boston
 
 ## 2. Methods
 
-## 3. Usage ```biking_patterns.Rmd```
+## 3. Reproducing results
 To run the code you should:
 - Pull this repository with this folder structure
 - Download the data and place it in ```data```
-- Install the packages mentioned in ```requirements.txt```
+- Install the packages mentioned in ```requirements.txt``` in ```documents```
 - Set your current working directory ```scripts```
 
 ## 4. Discussion of Results 
