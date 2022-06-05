@@ -12,6 +12,6 @@ To run the code you should:
 - Install the packages mentioned in ```requirements.txt``` in ```documents```
 - Set your current working directory ```scripts```
 
-The histograms in ```data_outputs``` are saved in the code. The rest of the outputs, I saved manually.
+The histograms in ```data_outputs``` are saved in the code with ```ggsave```. The rest of the outputs, I saved manually.
 
 ## 4. Discussion of Results 
