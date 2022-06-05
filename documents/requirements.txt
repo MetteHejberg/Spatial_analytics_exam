@@ -1,1 +1,7 @@
 Install the following libraries in order to run the code:
+- tidyverse
+- sf
+- sp
+- raster
+- ggplot2
+- diffdf
