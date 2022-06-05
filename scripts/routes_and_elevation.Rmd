@@ -1,0 +1,339 @@
+---
+title: "Routes and Elevation"
+author: "Mette Hejberg Pedersen"
+date: "6/2/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load libraries
+```{r}
+library(tidyverse)
+library(leaflet)
+library(sf)
+library(raster)
+library(sp)
+library(diffdf)
+library(ggplot2)
+```
+
+
+# Loading and cleaning data
+let's load the 2019 data
+```{r data}
+file_name <- "../data/bluebikes_tripdata_2019.csv"
+# read
+data_2019 <- read_csv(file_name, progress = FALSE)
+
+data_2019 <- data_2019 %>% rename("start_long" = "start station longitude",
+                                      "start_lat" = "start station latitude",
+                                      "end_long" = "end station longitude",
+                                      "end_lat" = "end station latitude",
+                                      "start_station_id" = "start station id",
+                                      "start_station_name" = "start station name",
+                                      "end_station_name" = "end station name",
+                                      "birth_year" = "birth year")
+```
+
+Clean the 2019 data
+```{r}
+# select the columns I need
+cleaned_2019 <- data_2019 %>% dplyr::select(c(tripduration, starttime, stoptime, start_lat, start_long, start_station_name, end_lat, end_long, end_station_name, usertype, year, month))
+
+cleaned_2019
+```
+
+Select the unique entries of start stations
+```{r}
+unique_start <- cleaned_2019 %>% dplyr::select(c(start_long, start_lat, start_station_name)) %>% unique()
+# there was a single outlier, so I remove it
+unique_start <- unique_start[!(unique_start$start_long == 0.0000|unique_start$start_lat == 0.0000), ]
+
+# other outliers
+unique_start <- unique_start %>% filter(start_station_name != "BCBS Hingham")
+unique_start <- unique_start %>% filter(start_station_name != "Main St at Beacon St")
+```
+
+I do the same for the end stations
+```{r}
+unique_end <- cleaned_2019 %>% dplyr::select(c(end_long, end_lat, end_station_name)) %>% unique()
+# I do the same for the end stations
+unique_end <- unique_end[!(unique_end$end_long == 0.0000|unique_end$end_lat == 0.000), ]
+# another outlier
+unique_end <- unique_end %>% filter(end_station_name != "BCBS Hingham")
+```
+
+Let's do the same for the 2020 data
+```{r}
+file_name <- "../data/bluebikes_tripdata_2020.csv"
+# read
+data_2020 <- read_csv(file_name, progress = FALSE)
+
+data_2020 <- data_2020 %>% rename("start_long" = "start station longitude",
+                                      "start_lat" = "start station latitude",
+                                      "end_long" = "end station longitude",
+                                      "end_lat" = "end station latitude",
+                                      "start_station_id" = "start station id",
+                                      "start_station_name" = "start station name",
+                                      "end_station_name" = "end station name",
+                                      "birth_year" = "birth year")
+```
+
+Let's clean the 2020 data
+```{r}
+cleaned_2020 <- data_2020 %>% dplyr::select(c(tripduration, starttime, stoptime, start_lat, start_long, start_station_name, end_lat, end_long, end_station_name, usertype, year, month))
+
+cleaned_2020
+```
+
+```{r}
+unique_start_2020 <- cleaned_2020 %>% dplyr::select(c(start_long, start_lat, start_station_name)) %>% unique()
+# there was a single outlier, so I remove it
+unique_start_2020 <- unique_start_2020[!(unique_start_2020$start_long == 0.0000|unique_start_2020$start_lat == 0.0000), ]
+
+# another outlier
+unique_start_2020 <- unique_start_2020 %>% filter(start_station_name != "BCBS Hingham")
+
+unique_end_2020 <- cleaned_2020 %>% dplyr::select(c(end_long, end_lat, end_station_name)) %>% unique()
+
+unique_end_2020 <- unique_end_2020[!(unique_end_2020$end_long == 0.0000|unique_end_2020$end_lat == 0.0000), ]
+
+unique_end_2020 <- unique_end_2020 %>% filter(end_station_name != "BCBS Hingham")
+```
+
+## Routes
+Top routes in 2019
+```{r}
+# start stations 2019
+unique_start %>% dplyr::select(start_station_name) %>% unique() %>%  count() # 359
+
+# get the station names
+stations_2019 <- table(data_2019$start_station_name)
+# convert to tibble
+stations_2019_df <- as.data.frame(stations_2019) %>% as_tibble()
+# get the indices in ascending order of frequency
+order(stations_2019_df$Freq)
+# select the top 36
+top36_2019 <- stations_2019_df[c(24, 282, 256, 207, 60, 53, 210, 244, 284, 62, 238, 205, 331, 353, 48, 218, 108, 120, 80, 89, 36, 83, 30, 252, 61, 97, 230, 228, 173, 241, 200, 22, 298, 229, 84, 227),]
+# rename station name column
+top36_2019 <- rename(top36_2019,
+                           "start_station_name" = "Var1")
+# merge data frame with longitude and latitude coordinates from data_2019
+top36_2019 <- left_join(top36_2019, unique_start, by = "start_station_name")
+
+# somehow I got 41 stations from this, but let's plot them anyway 
+leaflet() %>% addTiles() %>% 
+  addCircleMarkers(lng = top36_2019$start_long, lat = top36_2019$start_lat)
+
+# end stations 2019
+unique_end %>% dplyr::select(end_station_name) %>% unique() %>%  count() # 360
+# get the station names
+stations_2019_end <- table(data_2019$end_station_name)
+# convert to tibble
+stations_2019_df_end <- as.data.frame(stations_2019_end) %>% as_tibble()
+# get the indices in ascending order of frequency
+order(stations_2019_df_end$Freq)
+# select the top 36
+top36_2019_end <- stations_2019_df_end[c(207, 24, 130, 284, 331, 60,  53, 244, 209,  62, 210, 238, 205, 218,  48, 354, 108,  80,  89,  36, 252, 120,  30,  83,  61,  97, 230, 200, 228, 173, 298, 229, 241,  22,  84, 227),]
+# rename station name column
+top36_2019_end <- rename(top36_2019_end,
+                           "end_station_name" = "Var1")
+# merge data frame with longitude and latitude coordinates from data_2019
+top36_2019_end <- left_join(top36_2019_end, unique_end, by = "end_station_name")
+
+# transform to sf
+coords_start_2019 <- top36_2019 %>% st_as_sf(coords = c("start_long", "start_lat"), crs = 4326)
+
+coords_end_2019 <- top36_2019_end %>% st_as_sf(coords = c("end_long", "end_lat"), crs = 4326)
+
+# get the coordinates
+coords_2019 <- cbind(st_coordinates(coords_start_2019$geometry),st_coordinates(coords_end_2019$geometry))
+
+# get the routes
+linestrings_2019 = st_sfc(
+     lapply(1:nrow(coords_2019),
+           function(i){
+             st_linestring(matrix(coords_2019[i,],ncol=2,byrow=TRUE))
+           }))
+# give them a crs
+linestrings_2019 <- linestrings_2019 %>% st_set_crs(4326)
+plot(linestrings_2019)
+
+# get average length of linestring
+st_length(linestrings_2019) %>% mean() # 1494.143 m = 1.5 km
+
+# plot the routes on a map
+leaflet(linestrings_2019) %>% addTiles() %>% 
+  setView(lng = -71.08083, lat = 42.361145, zoom = 13) %>% 
+  addPolylines() %>% 
+  addCircleMarkers(lng = top36_2019_end$end_long, lat = top36_2019_end$end_lat, color = "red", popup = paste0("<strong>End station: </strong>", top36_2019_end$end_station_name)) %>% 
+  addCircleMarkers(lng = top36_2019$start_long, lat = top36_2019$start_lat, popup = paste0("<strong>Start station: </strong>", top36_2019$start_station_name)) %>% addScaleBar()
+```
+
+Let's do the same for the top routes in 2020
+```{r}
+# start stations 2020
+unique_start_2020 %>% dplyr::select(start_station_name) %>% unique() %>%  count() # 384
+
+stations_2020_start <- table(data_2020$start_station_name)
+
+stations_2020_df_start <- as.data.frame(stations_2020_start) %>% as_tibble()
+
+order(stations_2020_df_start$Freq)
+
+top38_2020_start <- stations_2020_df_start[c(22, 132, 351, 190, 270, 318, 64, 233, 266, 102, 123, 297, 214, 301, 373, 112, 261, 210, 219, 85, 89, 223, 222, 254, 258, 248, 274, 247, 182, 38, 246, 127, 65, 20, 103, 243, 96, 90),]
+
+top38_2020_start <- top38_2020_start %>% rename("start_station_name" = "Var1")
+
+top38_2020_start <- left_join(top38_2020_start, unique_start_2020, by = "start_station_name")
+
+# end stations 2020
+unique_end_2020 %>% dplyr::select(end_station_name) %>% unique() %>% count() # 385
+
+stations_2020_end <- table(data_2020$end_station_name)
+
+stations_2020_df_end <- as.data.frame(stations_2020_end) %>% as_tibble()
+
+order(stations_2020_df_end$Freq)
+
+top38_2020_end <- stations_2020_df_end[c(125, 132, 193, 271, 190, 233, 319, 64, 267, 123, 102, 214, 302, 298, 112, 210, 374, 262, 219, 85, 247, 89, 223, 248, 275, 255, 246, 222,  38, 259, 127, 182, 65, 20, 243, 103, 96, 90),]
+
+top38_2020_end <- top38_2020_end %>% rename("end_station_name" = "Var1")
+
+top38_2020_end <- left_join(top38_2020_end, unique_end_2020, by = "end_station_name")
+```
+
+```{r}
+coords_start_2020 <- top38_2020_start %>% st_as_sf(coords = c("start_long", "start_lat"), crs = 4326)
+
+coords_end_2020 <- top38_2020_end %>% st_as_sf(coords = c("end_long", "end_lat"), crs = 4326)
+
+coords_2020 <- cbind(st_coordinates(coords_start_2020$geometry),st_coordinates(coords_end_2020$geometry))
+
+linestrings_2020 = st_sfc(
+     lapply(1:nrow(coords_2020),
+           function(i){
+             st_linestring(matrix(coords_2020[i,],ncol=2,byrow=TRUE))
+           }))
+
+linestrings_2020 <- linestrings_2020 %>% st_set_crs(4326)
+plot(linestrings_2020)
+
+st_length(linestrings_2020) %>% mean() # 2137.295 m = 2,1 km
+```
+
+```{r}
+leaflet(linestrings_2020) %>% addTiles() %>% 
+  setView(lng = -71.08083, lat = 42.361145, zoom = 13) %>% 
+  addPolylines() %>% 
+  addCircleMarkers(lng = top38_2020_end$end_long, lat = top38_2020_end$end_lat, color = "red", popup = paste0("<strong>End station: </strong>", top36_2019_end$end_station_name)) %>% 
+  addCircleMarkers(lng = top38_2020_start$start_long, lat = top38_2020_start$start_lat, popup = paste0("<strong>Start station: </strong>", top36_2019$start_station_name)) %>% addScaleBar()
+```
+
+Seeing as I have plotted the routes in euclidian space, they do not resemble the real routes the users took very much. However, we are able to say something about where the users move between. It does not seem to be the case that there is a trend from north to south or from vest to east. Since most dots are purple, it seems that the users move within this space in all directions. However, very tentitively, the two red dots are below the river which could indicate a from north to south migration, which one could explore with more points and routes.
+
+## Elevation
+
+Let's explore the elevation of the city which also can have an impact of the movement opportunities the city offers.
+
+```{r}
+# read in elevation raster
+elevation <- raster("../data/_ags_ff2f2033_740d_47f5_8f3e_61b68c7d95f1.tif")
+
+# read in the neighborhoods 
+neighborhoods <- st_read("../data/Boston_Neighborhoods/Boston_Neighborhoods.shp")
+# reproject to get it on the map
+projected_neighborhoods <- st_transform(neighborhoods, 4326)
+
+# define colors 
+pal <- colorNumeric(c("#A52A2A", "#90A926", "#55EA13"), values(elevation),
+  na.color = "transparent")
+# plot raster on map 
+leaflet(projected_neighborhoods) %>% addTiles() %>% setView(lng = -71.067083, lat = 42.330145, zoom = 11.5) %>% addRasterImage(elevation, colors = pal, opacity = 0.8) %>% addLegend(pal = pal, values = values(elevation),
+    title = "Elevation in meters above sea level") %>% 
+  addPolygons(stroke = TRUE, fillColor = "transparent", color = "black", weight = 1) %>% addCircleMarkers(lng = top36_2019$start_long, lat = top36_2019$start_lat, color = "black") %>% addScaleBar()
+```
+
+There is a lot of elevation in the southern part of the city which probably also partly can explain the fact that there are less points there. The most used stations are centered in downtown Boston where there is little elevation.
+
+Extract elevation for stations
+```{r}
+# remove outliers if there are any
+points <- unique_start %>% 
+  filter(! is.na(start_long)) %>% 
+  filter(! is.na(start_lat))
+
+# transform points to sf object
+points_sf <- st_as_sf(points, coords = c("start_long", "start_lat"), crs = 4326)
+
+# extract the elevations of the stations
+points_sf$elevation  <- raster::extract(elevation, points_sf)
+
+# Look at the points and extraction results - add polygon on top for scale
+plot(points_sf["elevation"])
+
+# transform crs of points and neighborhoods to that of elevation raster
+points_elevation <- st_transform(points_sf, crs = crs(elevation, asText = TRUE))
+neighborhoods_elevation <- st_transform(neighborhoods, crs = crs(elevation, asText = TRUE))
+
+# plot the three object together
+plot(elevation)
+plot(points_elevation$geometry, add = TRUE)
+plot(neighborhoods_elevation$geometry, border = "black", add = TRUE)
+
+# histogram of frequency of elevation
+ggplot(points_sf, aes(x = elevation)) + geom_histogram() + labs(x="Elevation", y = "Frequency") + theme_classic()
+
+ggsave("../data_outputs/elevation_histogram.jpg")
+```
+
+The first plot of the elevation of the stations show that there are many more stations located in areas with low elevation, and the second plot with the neighborhood polygon overlay confirms this. 
+
+We can see from the histogram that there are more points with lower elevation than higher, and from the plots that there is a trend towards the north of lower elevation and higher elevation towards the south. The histogram also tells us that there are no points in the areas with the highest elevation. The highest elevation for the points is 50 m. Therefore, Boston does have variation in elevation, however the users of the bikes do not move within the spaces of most elevation.  
+
+Get more routes - all unique stations of 2019
+```{r}
+coords_start_2019_all <- unique_start %>% st_as_sf(coords = c("start_long", "start_lat"), crs = 4326)
+
+coords_end_2019_all <- unique_end %>% st_as_sf(coords = c("end_long", "end_lat"), crs = 4326)
+
+# find differences between the two objects
+end <- coords_end_2019_all$end_station_name %>% as_tibble()
+start <- coords_start_2019_all$start_station_name %>% as_tibble()
+
+diffdf(end, start)
+# remove rows with differences
+coords_end_2019_all <- coords_end_2019_all[c(0-406),]
+coords_end_2019_all <- coords_end_2019_all[c(0-406),]
+
+coords_2019_all <- cbind(st_coordinates(coords_start_2019_all$geometry), st_coordinates(coords_end_2019_all$geometry))
+
+# get all routes in 2019
+linestrings_2019_all <- st_sfc(
+  lapply(1:nrow(coords_2019_all),
+         function(i){
+           st_linestring(matrix(coords_2019_all[i,], ncol=2, byrow=TRUE))
+         })
+)
+
+plot(linestrings_2019_all)
+
+linestrings_2019_all <- linestrings_2019_all %>% st_set_crs(4326)
+
+lengths <- st_length(linestrings_2019_all) 
+lengths %>% mean() # 4811.787 == 4,8 km 
+lengths %>% median() # 4411.232 == 4.4 km
+
+#lengths <- lengths %>% as_tibble()
+lengths <- lengths %>% as.numeric()
+lengths <- lengths %>% as_tibble()
+
+ggplot(lengths, aes(x = value)) + geom_histogram() + labs(x="Length in meters", y = "Frequency") + theme_classic()
+
+ggsave("../data_outputs/routes_histogram.jpg")
+```
+
+The histogram visually confirms that the median length closely matches the mean length.
