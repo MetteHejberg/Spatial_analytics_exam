@@ -1,0 +1,88 @@
+---
+title: "Patterns over Time"
+author: "Mette Hejberg Pedersen"
+date: "6/2/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load libraries
+```{r}
+library(tidyverse)
+library(ggplot2)
+```
+
+## Loading and cleaning the data
+2019 data
+```{r}
+file_name <- "../data/bluebikes_tripdata_2019.csv"
+# read
+data_2019 <- read_csv(file_name, progress = FALSE)
+# rename columns
+data_2019 <- data_2019 %>% rename("start_long" = "start station longitude",
+                                      "start_lat" = "start station latitude",
+                                      "end_long" = "end station longitude",
+                                      "end_lat" = "end station latitude",
+                                      "start_station_id" = "start station id",
+                                      "start_station_name" = "start station name",
+                                      "end_station_name" = "end station name",
+                                      "birth_year" = "birth year")
+
+# select the columns I need
+cleaned_2019 <- data_2019 %>% dplyr::select(c(tripduration, starttime, stoptime, start_lat, start_long, start_station_name, end_lat, end_long, end_station_name, usertype, year, month))
+```
+
+Do the same for the 2020 data
+```{r}
+file_name <- "../data/bluebikes_tripdata_2020.csv"
+# read
+data_2020 <- read_csv(file_name, progress = FALSE)
+
+data_2020 <- data_2020 %>% rename("start_long" = "start station longitude",
+                                      "start_lat" = "start station latitude",
+                                      "end_long" = "end station longitude",
+                                      "end_lat" = "end station latitude",
+                                      "start_station_id" = "start station id",
+                                      "start_station_name" = "start station name",
+                                      "end_station_name" = "end station name",
+                                      "birth_year" = "birth year")
+
+cleaned_2020 <- data_2020 %>% dplyr::select(c(tripduration, starttime, stoptime, start_lat, start_long, start_station_name, end_lat, end_long, end_station_name, usertype, year, month))
+```
+
+## Analysis
+Set limit to avoid scientific notation
+```{r}
+options(scipen=100000)
+```
+
+2019 histogram of use per month
+```{r}
+labels = c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+
+# create histogram
+ggplot(cleaned_2019, aes(x = month)) + geom_histogram() + labs(x="Month", y = "Count") + scale_x_continuous(breaks = round(seq(min(cleaned_2019$month), max(cleaned_2019$month), by = 1),1), labels = labels) + theme_classic()
+
+# save plot
+ggsave("../data_outputs/2019_histogram.jpg")
+```
+
+2020 histogram of use per month 
+```{r}
+labels = c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November")
+
+# create histogram
+ggplot(cleaned_2020, aes(x = month)) + geom_histogram() + labs(x="Month", y = "Count") + scale_x_continuous(breaks = round(seq(min(cleaned_2020$month), max(cleaned_2020$month), by = 1),1), labels = labels) + theme_classic()
+
+# save plot
+ggsave("../data_outputs/2020_histogram.jpg")
+```
+
+There is no data from December in 2020. I don't know why this is. I do not believe this is due to the pandemic, since lockdown was at its height in April, and there are still people using the bikes in April.
+
+Even though there was a global pandemic in 2020, there are still clear trends between the two histograms. There are most users in the summer going into early fall and it starts to drop off in October. I expected to see the most usage in June and July, since these months ar peak tourist season, however this is not the case. In both plots, September is the month with the most entries, which confirms another assumption I have worked with, namely that it is most locals and long-term visitors using the bikes.
+
+Lastly, it is clear that lockdown peaked in April 2020 since this is the month with the least entries of all across both 2019 and 2020, which suggests that the users' movement opportunities were highly restricted during this month.
